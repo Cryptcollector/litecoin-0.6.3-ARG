@@ -1,6 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
 // Copyright (c) 2011-2012 Litecoin Developers
+// Copyright (c) 2013 Argentum Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef BITCOIN_MAIN_H
@@ -26,15 +27,15 @@ class CInv;
 class CRequestTracker;
 class CNode;
 
-static const unsigned int MAX_BLOCK_SIZE = 1000000;
+static const unsigned int MAX_BLOCK_SIZE = 10000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
-static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
+static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/10;
 static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
-static const int64 MIN_TX_FEE = 10000000;
+static const int64 MIN_TX_FEE = 500000;
 static const int64 MIN_RELAY_TX_FEE = MIN_TX_FEE;
-static const int64 MAX_MONEY = 84000000 * COIN; // Litecoin: maximum of 840k coins
+static const int64 MAX_MONEY = 64000000 * COIN; // Argentum: maximum of 64M coins
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
-static const int COINBASE_MATURITY = 100;
+static const int COINBASE_MATURITY = 10;
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
 static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 #ifdef USE_UPNP
@@ -106,6 +107,7 @@ int GetNumBlocksOfPeers();
 bool IsInitialBlockDownload();
 std::string GetWarnings(std::string strFor);
 bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
+double GetNextBlockValue();
 
 
 
@@ -390,6 +392,7 @@ typedef std::map<uint256, std::pair<CTxIndex, CTransaction> > MapPrevTx;
 class CTransaction
 {
 public:
+    static const int CURRENT_VERSION=1;
     int nVersion;
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
@@ -415,7 +418,7 @@ public:
 
     void SetNull()
     {
-        nVersion = 1;
+        nVersion = CTransaction::CURRENT_VERSION;
         vin.clear();
         vout.clear();
         nLockTime = 0;
@@ -538,7 +541,7 @@ public:
     {
         // Large (in bytes) low-priority (new, small-coin) transactions
         // need a fee.
-        return dPriority > COIN * 576 / 250; // Litecoin: 576 blocks found a day. Priority cutoff is 1 litecoin day / 250 bytes.
+        return dPriority > COIN * 1440 / 250; // Argentum: 1440 blocks found a day. Priority cutoff is 1 Argentum day / 250 bytes.
     }
 
     int64 GetMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, enum GetMinFee_mode mode=GMF_BLOCK) const
@@ -818,6 +821,7 @@ class CBlock
 {
 public:
     // header
+    static const int CURRENT_VERSION=1;
     int nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
@@ -859,7 +863,7 @@ public:
 
     void SetNull()
     {
-        nVersion = 1;
+        nVersion = CBlock::CURRENT_VERSION;
         hashPrevBlock = 0;
         hashMerkleRoot = 0;
         nTime = 0;
@@ -1611,7 +1615,7 @@ public:
 
     bool accept(CTxDB& txdb, CTransaction &tx,
                 bool fCheckInputs, bool* pfMissingInputs);
-    bool addUnchecked(CTransaction &tx);
+    bool addUnchecked(const uint256& hash, CTransaction &tx);
     bool remove(CTransaction &tx);
     void queryHashes(std::vector<uint256>& vtxid);
 
